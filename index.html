@@ -1,0 +1,197 @@
+<h2>Encrypt:</h2>
+<form>
+<input type="text" id="plaintext-in" placeholder="Enter Plaintext"></input><br>
+<input type="text" id="key-encrypt" placeholder="Enter Key"></input><br>
+Output:<br>
+<div id="ciphertext-out"></div><br>
+</form>
+<h2>Decrypt:</h2>
+<form>
+<input type="text" id="ciphertext-in" placeholder="Enter Ciphertext"></input><br>
+<input type="text" id="key-decrypt" placeholder="Enter Key"></input><br>
+Output:<br>
+<div id="plaintext-out"></div><br>
+<script>
+const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function CaesarShift(input, shift){
+  let output = "";
+  for(let i = 0; i<input.length;i++){
+    let letter_index = alphabet.indexOf(input[i]);
+    let shifted_letter = alphabet[(letter_index + shift) % 26];
+    output += shifted_letter;
+  }
+  return output;
+}
+
+
+function SingleColumnar(input,key){
+  let output = Array(input.length).fill("#");
+  sorted_key = key.split('').sort().join('');
+  
+  for(let i = 0; i<input.length;i++){
+    output[i]=input[key.indexOf(sorted_key[i])];
+  }
+  return output.join("");
+}
+console.log(SingleColumnar("ABC","LEH"));
+
+function Vigenere(input,key){
+  let output = "";
+  for(let i = 0; i<key.length;i++){
+    output+=CaesarShift(input[i],alphabet.indexOf(key[i]));
+  }
+  return output;
+}
+console.log(Vigenere("HELLO","ABCDE"));
+
+function VigenereDecrypt(input,key){
+  let output = "";
+  for (let i = 0; i < input.length; i++) {
+    let shift = alphabet.indexOf(key[i % key.length]);
+    output += CaesarShift(input[i], -shift);
+  }
+  return output;
+}
+console.log(VigenereDecrypt("HFNOS","ABCDE"))
+function GenerateNewKey(input,key){
+  newKey = SingleColumnar(key,input);
+  let shift = 0;
+  for(let k=0; k<key.length; k++){
+    shift += alphabet.indexOf(input[k]);
+  }
+  shift = shift % 26;
+  newKey = CaesarShift(newKey,shift);
+  return newKey;
+}
+console.log(GenerateNewKey("HEL","CTY"));
+function splitIntoGroups(str, size) {
+    const result = [];
+    for (let i = 0; i < str.length; i += size) {
+        result.push(str.slice(i, i + size));
+    }
+    return result;
+}
+
+function DynamicKeyVigenereEncrypt(input,key){
+  if(key.length == 0 || input.length == 0){return "";}
+  let keyLength = key.length;
+  let inputArray = splitIntoGroups(input, keyLength);  
+  let outputArray = [];
+  let newKey = "";
+  let shift = 0;
+  let excessText = false;
+  if(input.length % keyLength != 0){excessText = true}
+  if(!excessText){
+    newKey = key;
+    
+    outputArray.push(Vigenere(inputArray[0],newKey));
+    if(inputArray.length > 1){
+      for(let i = 1; i<inputArray.length; i++){
+        newKey = GenerateNewKey(key,inputArray[i-1]);
+        outputArray.push(Vigenere(inputArray[i],newKey));
+        key=newKey;
+      }
+    }
+  }
+  else{
+    if(inputArray.length == 1){
+      let truncatedKey = key.slice(0,inputArray[0].length);
+      console.log(input,truncatedKey);
+      return Vigenere(input,truncatedKey);
+    }
+    else{
+      let normalStrings = inputArray.length - 1;
+      outputArray.push(Vigenere(inputArray[0],key));
+      if(normalStrings > 1){
+        for(let i = 1; i<normalStrings; i++){
+          newKey = GenerateNewKey(key,inputArray[i-1]);
+          outputArray.push(Vigenere(inputArray[i],newKey));
+          key=newKey;
+          console.log("hi");
+        }
+      }
+      console.log("hi2");
+      let truncatedKey = newKey.slice(0,inputArray[normalStrings].length);
+      outputArray.push(Vigenere(inputArray[normalStrings],truncatedKey));
+    }
+  }
+  return outputArray.join("");
+}
+function DynamicKeyVigenereDecrypt(input,key){
+  if(key.length == 0 || input.length == 0){return "";}
+  let keyLength = key.length;
+  let inputArray = splitIntoGroups(input, keyLength);  
+  let outputArray = [];
+  let newKey = "";
+  let shift = 0;
+  let excessText = false;
+  if(input.length % keyLength != 0){excessText = true}
+  if(!excessText){
+    newKey = key;
+    
+    outputArray.push(VigenereDecrypt(inputArray[0],newKey));
+    if(inputArray.length > 1){
+      for(let i = 1; i<inputArray.length; i++){
+        newKey = GenerateNewKey(key,outputArray[i-1]);
+        outputArray.push(VigenereDecrypt(inputArray[i],newKey));
+        key=newKey;
+      }
+    }
+  }
+  else{
+    if(inputArray.length == 1){
+      let truncatedKey = key.slice(0,inputArray[0].length);
+      console.log(input,truncatedKey);
+      return VigenereDecrypt(input,truncatedKey);
+    }
+    else{
+      let normalStrings = inputArray.length - 1;
+      outputArray.push(VigenereDecrypt(inputArray[0],key));
+      if(normalStrings > 1){
+        for(let i = 1; i<normalStrings; i++){
+          newKey = GenerateNewKey(key,outputArray[i-1]);
+          outputArray.push(VigenereDecrypt(inputArray[i],newKey));
+          key=newKey;
+          console.log("hi");
+        }
+      }
+      console.log("hi2");
+      let truncatedKey = newKey.slice(0,inputArray[normalStrings].length);
+      outputArray.push(Vigenere(inputArray[normalStrings],truncatedKey));
+    }
+  }
+  return outputArray.join("");
+}
+
+function CleanInput(input) {
+  return input.replace(/[^a-zA-Z]/g, "").toUpperCase();
+}
+
+const input_box_encrypt = document.getElementById("plaintext-in");
+const key_box_encrypt = document.getElementById("key-encrypt");
+const output_box_encrypt = document.getElementById("ciphertext-out");
+
+function updateOutputEncryption() {
+    output_box_encrypt.textContent = DynamicKeyVigenereEncrypt(
+        CleanInput(input_box_encrypt.value),
+        CleanInput(key_box_encrypt.value)
+    );
+}
+
+input_box_encrypt.addEventListener("input", updateOutputEncryption);
+key_box_encrypt.addEventListener("input", updateOutputEncryption);
+
+const input_box_decrypt = document.getElementById("ciphertext-in");
+const key_box_decrypt = document.getElementById("key-decrypt");
+const output_box_decrypt = document.getElementById("plaintext-out");
+
+function updateOutputDecryption() {
+    output_box_decrypt.textContent = DynamicKeyVigenereEncrypt(
+        CleanInput(input_box_decrypt.value),
+        CleanInput(key_box_decrypt.value)
+    );
+}
+
+input_box_decrypt.addEventListener("input", updateOutputDecryption);
+key_box_decrypt.addEventListener("input", updateOutputDecryption);
+</script>

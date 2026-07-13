@@ -148,14 +148,17 @@
     }
     
     
-    function SingleColumnar(input,key){
-      let output = Array(input.length).fill("#");
-      sorted_key = key.split('').sort().join('');
-      
-      for(let i = 0; i<input.length;i++){
-        output[i]=input[key.indexOf(sorted_key[i])];
-      }
-      return output.join("");
+    function SingleColumnar(input, key) {
+        const order = key
+            .split("")
+            .map((char, index) => ({ char, index }))
+            .sort((a, b) =>
+                a.char === b.char
+                    ? a.index - b.index 
+                    : a.char.localeCompare(b.char)
+            );
+    
+        return order.map(x => input[x.index]).join("");
     }
     
     function Vigenere(input,key){

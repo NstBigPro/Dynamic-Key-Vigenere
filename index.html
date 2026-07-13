@@ -95,6 +95,18 @@
           border-color: #4a90e2;
           box-shadow: 0 0 8px rgba(74, 144, 226, 0.25);
       }
+      p {
+        text-indent: 2em;
+      }
+      .received {
+        font-weight: bold;
+      }
+      .vigenere {
+        color: DarkCyan;
+      }
+      .new-key{
+        color: red;
+      }
       @media (max-width: 700px) {
           body {
               padding: 20px;
@@ -116,6 +128,7 @@
 
             <div class="output-label">Ciphertext</div>
             <div id="ciphertext-out" class="output-box"></div>
+            <div id="encryption-logs"></div>
         </form>
     </div>
 
@@ -127,11 +140,14 @@
 
             <div class="output-label">Plaintext</div>
             <div id="plaintext-out" class="output-box"></div>
+            <div id="decryption-logs"></div>
         </form>
     </div>
   </div>
   <script>
     const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let encryption_logs = document.getElementById("encryption-logs");
+    let decryption_logs = document.getElementById("decryption-logs");
     function CaesarShift(input, shift) {
       let output = "";
     
@@ -170,7 +186,7 @@
         output+=CaesarShift(input[i],alphabet.indexOf(key[i]));
       }
       
-      console.log("Encrypted text " + input + " with key " + key + " and output "+ output);
+      encryption_logs.innerHTML += ("<p class=\"vigenere\"> Encrypted text" + input + " with key" + key + " and output "+ output +"</p>");
       return output;
     }
     
@@ -181,10 +197,11 @@
         output += CaesarShift(input[i], -shift);
       }
       
-      console.log("Decrypted text " + input + " with key " + key + " and output "+ output);
+      decryption_logs.innerHTML += ("<p class=\"vigenere\"> Decrypted text " + input + " with key " + key + " and output "+ output +"</p>");
+
       return output;
     }
-    function GenerateNewKey(input,key){
+    function GenerateNewKey(input,key,type){
       transposedKey = SingleColumnar(input,key);
       let shift = 0;
       for(let k=0; k<key.length; k++){
@@ -192,7 +209,11 @@
       }
       shift = shift % 26;
       newKey = CaesarShift(transposedKey,shift);
-      console.log("Key " + input + " was transposed with plaintext segment " + key + " to " + transposedKey + " with shift " + shift + " and resulted in " + newKey);
+      if(type=="ENCRYPTION"){
+      encryption_logs.innerHTML += ("<p class=\"new-key\"> Key " + input + " was transposed with plaintext segment " + key + " to " + transposedKey + " with shift " + shift + " and resulted in " + newKey + "</p>");
+      } else {
+        decryption_logs.innerHTML += ("<p class=\"new-key\"> Key " + input + " was transposed with plaintext segment " + key + " to " + transposedKey + " with shift " + shift + " and resulted in " + newKey + "</p>");
+      }
       return newKey;
     }
     function splitIntoGroups(str, size) {
@@ -208,8 +229,9 @@
       let keyLength = key.length;
       let inputArray = splitIntoGroups(input, keyLength);  
       let outputArray = [];
-      
-      console.log("Received text:" + inputArray.join("|")) 
+      encryption_logs.innerHTML = "";
+      encryption_logs.innerHTML+=("<p class=\"received\"> Received text:" + inputArray.join("|") + "</p>") 
+
       let newKey = "";
       let shift = 0;
       let excessText = false;
@@ -220,7 +242,7 @@
         outputArray.push(Vigenere(inputArray[0],newKey));
         if(inputArray.length > 1){
           for(let i = 1; i<inputArray.length; i++){
-            newKey = GenerateNewKey(key,inputArray[i-1]);
+            newKey = GenerateNewKey(key,inputArray[i-1], "ENCRYPTION");
             outputArray.push(Vigenere(inputArray[i],newKey));
             key=newKey;
           }
@@ -236,7 +258,7 @@
           outputArray.push(Vigenere(inputArray[0],key));
           if(normalStrings >= 1){
             for(let i = 1; i<normalStrings; i++){
-              newKey = GenerateNewKey(key,inputArray[i-1]);
+              newKey = GenerateNewKey(key,inputArray[i-1], "ENCRYPTION");
               outputArray.push(Vigenere(inputArray[i],newKey));
               key=newKey;
             }
@@ -248,22 +270,24 @@
       return outputArray.join("");
     }
     function DynamicKeyVigenereDecrypt(input,key){
+      
+      decryption_logs.innerHTML = "";
       if(key.length == 0 || input.length == 0){return "";}
       let keyLength = key.length;
       let inputArray = splitIntoGroups(input, keyLength); 
-      console.log("Received text:" + inputArray.join("|")) 
+      decryption_logs.innerHTML+=("<p class=\"received\"> Received text:" + inputArray.join("|") + "</p>") 
       let outputArray = [];
       let newKey = "";
       let shift = 0;
       let excessText = false;
-      if(input.length % keyLength != 0){excessText = true; console.log("Excess Text detected")}
+      if(input.length % keyLength != 0){excessText = true; }
       if(!excessText){
         newKey = key;
         
         outputArray.push(VigenereDecrypt(inputArray[0],newKey));
         if(inputArray.length > 1){
           for(let i = 1; i<inputArray.length; i++){
-            newKey = GenerateNewKey(key,outputArray[i-1]);
+            newKey = GenerateNewKey(key,outputArray[i-1],"DECRYPTION");
             outputArray.push(VigenereDecrypt(inputArray[i],newKey));
             key=newKey;
           }
@@ -272,7 +296,6 @@
       else{
         if(inputArray.length == 1){
           let truncatedKey = key.slice(0,inputArray[0].length);
-          console.log(input,truncatedKey);
           return VigenereDecrypt(input,truncatedKey);
         }
         else{
@@ -280,13 +303,11 @@
           outputArray.push(VigenereDecrypt(inputArray[0],key));
           if(normalStrings >= 1){
             for(let i = 1; i<normalStrings; i++){
-              newKey = GenerateNewKey(key,outputArray[i-1]);
+              newKey = GenerateNewKey(key,outputArray[i-1],"DECRYPTION");
               outputArray.push(VigenereDecrypt(inputArray[i],newKey));
               key=newKey;
-              console.log("hi");
             }
           }
-          console.log("hi2");
           let truncatedKey = key.slice(0,inputArray[normalStrings].length);
           outputArray.push(VigenereDecrypt(inputArray[normalStrings],truncatedKey));
         }
@@ -322,7 +343,6 @@
             CleanInput(key_box_decrypt.value)
         );
     }
-    console.log(DynamicKeyVigenereEncrypt("CRYPTOLOGY","MATH"))
     input_box_decrypt.addEventListener("input", updateOutputDecryption);
     key_box_decrypt.addEventListener("input", updateOutputDecryption);
   </script>
